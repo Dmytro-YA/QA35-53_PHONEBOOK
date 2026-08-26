@@ -1,3 +1,4 @@
+from selenium.common import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -14,6 +15,7 @@ class ContactPage(BasePage):
     ADDRESS_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Address"]')
     DESCRIPTION_INPUT = (By.CSS_SELECTOR, 'input[placeholder="description"]')
     SAVE_BTN = (By.XPATH, '//button[b[text()="Save"]]')
+    CONTACTS_LINK = (By.CSS_SELECTOR, 'a[href="/contacts"]')
 
 
     # def __init__(self, driver):
@@ -67,11 +69,17 @@ class ContactPage(BasePage):
 
     def contact_card_visible(self, phone):
         locator = (By.XPATH, f'//h3[text()="{phone}"]')
-        element = WebDriverWait(self.driver,5).until(
+        try:
+            element = WebDriverWait(self.driver,2).until(
             EC.visibility_of_element_located(locator)
-        )
-        return element.is_displayed()
+            )
+            return element.is_displayed()
+        except TimeoutException:
+            return False
 
     def open_contact_details(self,phone):
         card = self.driver.find_element(By.XPATH, f'//h3[text()="{phone}"]/..')
         card.click()
+
+    def open_contacts_link(self):
+        self.click(self.CONTACTS_LINK)
