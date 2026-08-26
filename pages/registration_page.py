@@ -4,8 +4,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 
+from pages.base_page import BasePage
 
-class RegistrationPage:
+
+class RegistrationPage(BasePage):
 
     LOGIN_NAV_LINK = (By.CSS_SELECTOR, 'a[href="/login"]')
     EMAIL_INPUT = (By.CSS_SELECTOR, 'input[name="email"]')
@@ -13,20 +15,23 @@ class RegistrationPage:
     REGISTRATION_BTN = (By.XPATH, "//button[@name='registration']")
     SIGN_OUT_BTN = (By.XPATH, "//button[text()='Sign Out']")
 
-    def __init__(self, driver):
-        self.driver = driver
+    # def __init__(self, driver):
+    #     self.driver = driver
 
     def open_registration_form(self):
-        self.driver.find_element(*self.LOGIN_NAV_LINK).click()
-
+        # self.driver.find_element(*self.LOGIN_NAV_LINK).click()
+        self.click(self.LOGIN_NAV_LINK)
     def fill_email_and_password(self, email: str, password: str):
-        self.driver.find_element(*self.EMAIL_INPUT).clear()
-        self.driver.find_element(*self.EMAIL_INPUT).send_keys(email)
-        self.driver.find_element(*self.PASSWORD_INPUT).clear()
-        self.driver.find_element(*self.PASSWORD_INPUT).send_keys(password)
+        # self.driver.find_element(*self.EMAIL_INPUT).clear()
+        # self.driver.find_element(*self.EMAIL_INPUT).send_keys(email)
+        # self.driver.find_element(*self.PASSWORD_INPUT).clear()
+        # self.driver.find_element(*self.PASSWORD_INPUT).send_keys(password)
+        self.fill(self.EMAIL_INPUT, email)
+        self.fill(self.PASSWORD_INPUT, password)
 
     def click_registration_btn(self):
-        self.driver.find_element(*self.REGISTRATION_BTN).click()
+        # self.driver.find_element(*self.REGISTRATION_BTN).click()
+        self.click(self.REGISTRATION_BTN)
 
     def is_logged(self):
         try:
