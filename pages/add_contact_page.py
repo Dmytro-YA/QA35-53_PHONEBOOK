@@ -77,9 +77,23 @@ class ContactPage(BasePage):
         except TimeoutException:
             return False
 
+    def is_add_btn_active(self):
+        add_link = self.find(self.ADD_CONTACT_LINK)
+        return add_link.get_attribute("class") or ""
+
     def open_contact_details(self,phone):
-        card = self.driver.find_element(By.XPATH, f'//h3[text()="{phone}"]/..')
+        card = self.driver.find_element(By.XPATH, f'//h3[text()="{phone}"]/../..')
         card.click()
 
     def open_contacts_link(self):
         self.click(self.CONTACTS_LINK)
+        WebDriverWait(self.driver,5).until(EC.url_contains("contacts"))
+
+    def contact_cards_count(self, phone):
+        return len(self.driver.find_elements(By.XPATH,f"//h3[text()='{phone}']/.."))
+
+    def create_contact_steps(self, contact):
+        self.open_add_contact_form()
+        self.fill_contact_form(contact)
+        self.submit_contact()
+
