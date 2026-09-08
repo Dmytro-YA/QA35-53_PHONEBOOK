@@ -1,6 +1,6 @@
 import random
 import time
-
+import logging
 import pytest
 
 from data.contact_data import create_contact
@@ -12,15 +12,14 @@ from faker import Faker
 from pages.contacts_page import ContactsPage
 from pages.faker1 import faker
 
-
+loger = logging.getLogger(__name__)
 def test_add_contact_success_all_fields(authenticated_driver):
+    loger.info("Start test_add_contact_success_all_fields")
     contact_page = ContactPage(authenticated_driver)
     contacts_page = ContactPage(authenticated_driver)
     contact = create_contact()
 
-    contact_page.open_add_contact_form()
-    contact_page.fill_contact_form(contact)
-    contact_page.submit_contact()
+    contact_page.create_contact_steps(contact)
 
     assert contacts_page.contact_card_visible(contact.phone)
 

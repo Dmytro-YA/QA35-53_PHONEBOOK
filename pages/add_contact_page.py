@@ -2,9 +2,9 @@ from selenium.common import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-
+import logging
 from pages.base_page import BasePage
-
+logger = logging.getLogger(__name__)
 
 class ContactPage(BasePage):
     ADD_CONTACT_LINK = (By.CSS_SELECTOR, 'a[href="/add"]')
@@ -93,6 +93,7 @@ class ContactPage(BasePage):
         return len(self.driver.find_elements(By.XPATH,f"//h3[text()='{phone}']/.."))
 
     def create_contact_steps(self, contact):
+        logger.info(f"Creating contact {contact.phone}")
         self.open_add_contact_form()
         self.fill_contact_form(contact)
         self.submit_contact()

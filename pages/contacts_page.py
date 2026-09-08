@@ -4,13 +4,13 @@ from selenium.common import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+import logging
 from pages.base_page import BasePage
 
-
+logger = logging.getLogger(__name__)
 class ContactsPage(BasePage):
     CONTACTS_LINK = (By.CSS_SELECTOR, 'a[href="/contacts"]')
-    CONTACT_CARDS = (By.CSS_SELECTOR, 'contact-item_card__2SOIM')
+    CONTACT_CARDS = (By.CSS_SELECTOR, '.contact-item_card__2SOIM')
     EDIT_BTN = (By.XPATH, '//button[text()="Edit"]')
     EDIT_NAME_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Name"]')
     EDIT_LAST_NAME_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Last Name"]')
@@ -19,6 +19,7 @@ class ContactsPage(BasePage):
     EDIT_ADDRESS_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Address"]')
     EDIT_DESCRIPTION_INPUT = (By.CSS_SELECTOR, 'input[placeholder="desc"]')
     EDIT_SAVE_BTN = (By.XPATH, '//button[text()="Save"]')
+    REMOVE_BTN = (By.XPATH, '//button[text()="Remove"]')
 
 
 
@@ -59,6 +60,25 @@ class ContactsPage(BasePage):
 
     def get_edit_contact(self, locator):
         return self.find(locator).get_attribute("value")
+
+    def remove_current_contact(self):
+        logger.info("Removing current contact")
+        self.click(self.REMOVE_BTN)
+        time.sleep(1)
+
+    def open_first_contact(self):
+        cards = self.driver.find_elements(*self.CONTACT_CARDS)
+        first_card = cards[0]
+        first_card.click()
+
+    def total_contacts_count(self):
+        return len(self.driver.find_elements(*self.CONTACT_CARDS))
+
+    def remove_all_contacts(self):
+        while self.total_contacts_count() > 0:
+            self.open_first_contact()
+            self.remove_current_contact()
+
 
 
 

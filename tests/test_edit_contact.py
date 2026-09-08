@@ -1,11 +1,12 @@
 import time
-
+import logging
 import pytest
 
 from data.contact_data import create_contact, fake
 from pages.add_contact_page import ContactPage
 from pages.contacts_page import ContactsPage
 
+logger = logging.getLogger(__name__)
 
 def test_edit_contact_name_update(authenticated_driver):
     contact_page = ContactPage(authenticated_driver)
@@ -43,12 +44,15 @@ def test_edit_contact_last_name_updated(authenticated_driver):
     print(new_last_name)
 
 def test_edit_contact_phone_updated(authenticated_driver):
+    logger.info("Start test_edit_contact_phone_updated")
     contact_page = ContactPage(authenticated_driver)
     contacts_page = ContactsPage(authenticated_driver)
 
     contact = create_contact()
     contact_page.create_contact_steps(contact)
     new_phone = fake.unique.numerify("05########")
+
+    logger.debug(f'Old phone: {contact.phone} New phone: {new_phone}')
 
     contacts_page.open_contact_details(contact.phone)
     contacts_page.open_edit_mode()
