@@ -1,54 +1,30 @@
-import uuid
-
-from models.user import User
+import logging
+import pytest
+from data.user_data import create_user
 from pages.registration_page import RegistrationPage
 
+logger = logging.getLogger(__name__)
 
-def test_registration_success(driver):
-    registration_page = RegistrationPage(driver)
+@pytest.mark.smoke
+@pytest.mark.parametrize("u", [create_user()])
+def test_reg_obj_success(driver, u):
+    logger.info(f"Starting test_reg_obj_success for user: {u.username}")
+    rp = RegistrationPage(driver)
+    rp.open_registration_form()
+    rp.fill_email_and_password(u.username, u.password)
+    rp.click_registration_btn()
+    assert rp.is_logged()
 
-    random_suffix = uuid.uuid4().hex[:8]
-
-    user = User(
-        f"dmitri{random_suffix}@gmail.com",
-        "Test12345@"
-    )
-    registration_page.open_registration_form()
-    registration_page.fill_email_and_password(user.username,user.password)
-    registration_page.click_registration_btn()
-
-    assert registration_page.is_logged() is True
-
-
-def test_registration_wrong_email(driver):
-    registration_page = RegistrationPage(driver)
-
-
-
-    user = User(
-        "dmitrigmail.com",
-        "Test12345@"
-    )
-    registration_page.open_registration_form()
-    registration_page.fill_email_and_password(user.username, user.password)
-    registration_page.click_registration_btn()
-
-    alert_text = registration_page.get_alert_text()
-    assert 'Wrong email or password format' in alert_text
-    registration_page.accept_alert()
-
-
-def test_registration_wrong_password(driver):
-    registration_page = RegistrationPage(driver)
-
-    user = User(
-        "dmitri@gmail.com",
-        "Test12345"
-    )
-    registration_page.open_registration_form()
-    registration_page.fill_email_and_password(user.username, user.password)
-    registration_page.click_registration_btn()
-
-    alert_text = registration_page.get_alert_text()
-    assert 'Wrong email or password format' in alert_text
-    registration_page.accept_alert()
+@pytest.mark.regression
+@pytest.mark.parametrize("u", [
+    create_user(username="dmitrigmail.com"),
+    create_user(password="Test12345")
+])
+def test_reg_obj_neg(driver, u):
+    logger.info(f"Starting test_reg_obj_neg for user: {u.username}")
+    rp = RegistrationPage(driver)
+    rp.open_registration_form()
+    rp.fill_email_and_password(u.username, u.password)
+    rp.click_registration_btn()
+    assert 'Wrong email or password format' in rp.get_alert_text()
+    rp.accept_alert()

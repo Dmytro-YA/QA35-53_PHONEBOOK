@@ -25,7 +25,8 @@ class ContactsPage(BasePage):
 
     def open_contacts_link(self):
         self.click(self.CONTACTS_LINK)
-        WebDriverWait(self.driver,5).until(EC.url_contains("contacts"))
+        # WebDriverWait(self.driver,5).until(EC.url_contains("contacts"))
+        self.wait_until_url_matches(r"/contacts$")
 
     def contact_cards_count(self, phone):
         return len(self.driver.find_elements(By.XPATH,f"//h3[text()='{phone}']/.."))
@@ -37,10 +38,11 @@ class ContactsPage(BasePage):
     def contact_card_visible(self, phone):
         locator = (By.XPATH, f'//h3[text()="{phone}"]')
         try:
-            element = WebDriverWait(self.driver,2).until(
-            EC.visibility_of_element_located(locator)
-            )
-            return element.is_displayed()
+            # element = WebDriverWait(self.driver,2).until(
+            # EC.visibility_of_element_located(locator)
+            # )
+            # return element.is_displayed()
+            return self.wait_until_visible(locator).is_displayed()
         except TimeoutException:
             return False
 
@@ -64,7 +66,8 @@ class ContactsPage(BasePage):
     def remove_current_contact(self):
         logger.info("Removing current contact")
         self.click(self.REMOVE_BTN)
-        time.sleep(1)
+        # time.sleep(1)
+        self.wait_until_url_matches(r"/contacts$")
 
     def open_first_contact(self):
         cards = self.driver.find_elements(*self.CONTACT_CARDS)

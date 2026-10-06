@@ -1,26 +1,26 @@
 import time
-
-from pages.contacts_page import ContactsPage
 import logging
+import pytest
+from pages.contacts_page import ContactsPage
+
 logger = logging.getLogger(__name__)
 
-def test_delete_contact_decreases_list_by_one(ensure_min_contacts):
-    logger.info("Start test_delete_contact_decreases_list_by_one")
-    contacts_page = ContactsPage(ensure_min_contacts)
-
-    contacts_page.open_contacts_link()
-    count_before = contacts_page.total_contacts_count()
-    logger.info(f"There are {count_before} contacts before deletion")
+@pytest.mark.regression
+def test_del_c(ensure_min_contacts):
+    logger.info("Starting test_del_c: deleting a single contact")
+    csp = ContactsPage(ensure_min_contacts)
+    csp.open_contacts_link()
+    b4 = csp.total_contacts_count()
     time.sleep(1)
-    contacts_page.open_first_contact()
-    contacts_page.remove_current_contact()
-    count_after = contacts_page.total_contacts_count()
-    logger.info(f"There are {count_after} contacts after deletion")
-    assert count_before - 1 == count_after
+    csp.open_first_contact()
+    csp.remove_current_contact()
+    assert b4 - 1 == csp.total_contacts_count()
 
-def test_remove_all_contacts(ensure_min_contacts):
-    contacts_page = ContactsPage(ensure_min_contacts)
-    contacts_page.open_contacts_link()
-    contacts_page.remove_all_contacts()
-    assert contacts_page.total_contacts_count() == 0
+@pytest.mark.regression
+def test_del_all(ensure_min_contacts):
+    logger.info("Starting test_del_all: deleting all contacts")
+    csp = ContactsPage(ensure_min_contacts)
+    csp.open_contacts_link()
+    csp.remove_all_contacts()
+    assert csp.total_contacts_count() == 0
 

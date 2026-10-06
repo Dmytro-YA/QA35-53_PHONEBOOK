@@ -1,5 +1,10 @@
+from datetime import datetime
+import re
+
 import pytest
 from selenium import webdriver
+from selenium.webdriver.support.abstract_event_listener import AbstractEventListener
+from selenium.webdriver.support.event_firing_webdriver import EventFiringWebDriver
 
 from data.contact_data import create_contact
 from data.user_data import exiting_user
@@ -9,7 +14,10 @@ from pages.login_page import LoginPage
 import logging
 
 from utils.logger_config import configure_logging
+from utils.selenium_listener import SeleniumListener
+from pathlib import Path
 
+SCREENSHOTS_DIR = Path(__file__).parent / "screenshots"
 configure_logging()
 logger = logging.getLogger(__name__)
 
@@ -21,10 +29,38 @@ def driver():
     driver.get('https://telranedu.web.app/')
     driver.implicitly_wait(5)
 
-    yield driver
+    yield EventFiringWebDriver(driver, SeleniumListener())
     logger.info("Closing browser session")
     driver.quit()
+@pytest.hookimpl( hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    setattr(item, "rep_" + report.when, report)
 
+@pytest.fixture( autouse=True)
+def save_screenshot_on_failer(request, driver):
+    yield
+    setup_report = getattr(request.node, "rep_setup", None)
+    call_report = getattr(request.node, "rep_call", None)
+    failed = (setup_report and setup_report.failed) or (call_report and call_report.failed)
+    if not failed:
+        return
+
+    SCREENSHOTS_DIR.mkdir(exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    safe_test_name = re.sub(r'[<>:"/\\|?*]', "_", request.node.name)
+
+    filename = f"{safe_test_name}_{timestamp}.png"
+
+    screenshot_path = SCREENSHOTS_DIR / filename
+
+    logger.error("Test failed: %s", request.node.nodeid)
+
+    if driver.save_screenshot(str(screenshot_path)):
+        logger.info("Screenshot saved: %s", screenshot_path)
 
 @pytest.fixture
 def authenticated_driver(driver):

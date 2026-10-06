@@ -97,4 +97,5 @@ class ContactPage(BasePage):
         self.open_add_contact_form()
         self.fill_contact_form(contact)
         self.submit_contact()
+        self.wait_until_url_matches(r"/contacts$")
 
