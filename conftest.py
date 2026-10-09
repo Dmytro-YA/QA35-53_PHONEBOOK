@@ -5,7 +5,8 @@ import pytest
 from selenium import webdriver
 from selenium.webdriver.support.abstract_event_listener import AbstractEventListener
 from selenium.webdriver.support.event_firing_webdriver import EventFiringWebDriver
-
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from data.contact_data import create_contact
 from data.user_data import exiting_user
 from pages.add_contact_page import ContactPage
@@ -13,6 +14,7 @@ from pages.contacts_page import ContactsPage
 from pages.login_page import LoginPage
 import logging
 
+from utils.config import BASE_URL
 from utils.logger_config import configure_logging
 from utils.selenium_listener import SeleniumListener
 from pathlib import Path
@@ -21,12 +23,39 @@ SCREENSHOTS_DIR = Path(__file__).parent / "screenshots"
 configure_logging()
 logger = logging.getLogger(__name__)
 
+def pytest_addoption(parser):
+    parser.addoption(
+    "--browser",
+    action="store",
+    default="chrome",
+    choices=["chrome", "firefox"],
+    help="Browser to run tests on: chrome or firefox",
+    )
+    parser.addoption(
+    "--headless",
+    action="store_true",
+    help="Run tests in headless mode",
+    )
 
 @pytest.fixture
-def driver():
+def driver(request):
+    browser = request.config.getoption("--browser")
+    headless = request.config.getoption("--headless")
     logger.info("Starting browser session")
-    driver = webdriver.Chrome()
-    driver.get('https://telranedu.web.app/')
+
+    if browser == "chrome":
+        options = ChromeOptions()
+        if headless:
+            options.add_argument("--headless=new")
+        driver = webdriver.Chrome(options=options)
+
+    elif browser == "firefox":
+        options = FirefoxOptions()
+        if headless:
+            options.add_argument("-headless")
+        driver = webdriver.Firefox(options=options)
+
+    driver.get(BASE_URL)
     driver.implicitly_wait(5)
 
     yield EventFiringWebDriver(driver, SeleniumListener())
@@ -61,6 +90,8 @@ def save_screenshot_on_failer(request, driver):
 
     if driver.save_screenshot(str(screenshot_path)):
         logger.info("Screenshot saved: %s", screenshot_path)
+        import allure
+        allure.attach.file(str(screenshot_path), name="screenshot", attachment_type=allure.attachment_type.PNG)
 
 @pytest.fixture
 def authenticated_driver(driver):

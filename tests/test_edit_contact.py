@@ -1,5 +1,7 @@
 import time
 import logging
+
+import allure
 import pytest
 from data.contact_data import create_contact, fake
 from pages.add_contact_page import ContactPage
@@ -7,6 +9,7 @@ from pages.contacts_page import ContactsPage
 
 logger = logging.getLogger(__name__)
 
+@allure.title("Edit contact")
 @pytest.mark.smoke
 def test_edit_name(authenticated_driver):
     logger.info("Starting test_edit_name")
