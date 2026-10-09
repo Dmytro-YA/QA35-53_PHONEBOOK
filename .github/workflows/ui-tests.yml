@@ -7,13 +7,16 @@ jobs:
   test-chrome:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v7
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.12'
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Run UI tests (Chrome)
         env:
@@ -33,17 +36,19 @@ jobs:
             allure-results/
           if-no-files-found: warn
 
-
   test-firefox:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v7
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.12'
 
-      - run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Run UI tests (Firefox)
         env:
@@ -61,4 +66,4 @@ jobs:
             logs/
             screenshots/
             allure-results/
-          if-no-files-found: ignore
+          if-no-files-found: warn
