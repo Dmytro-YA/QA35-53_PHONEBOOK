@@ -31,7 +31,7 @@ jobs:
             logs/
             screenshots/
             allure-results/
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
 
   test-firefox:
