@@ -26,7 +26,7 @@ jobs:
         run: |
           mkdir -p logs screenshots allure-results
           pytest tests/test_login.py --browser=chrome --headless --alluredir=allure-results
-          echo "=== Проверяем, что создалось ==="
+          echo === Проверяем, что создалось ===
           ls -la allure-results/
 
           - name: Upload diagnostics (Chrome)
