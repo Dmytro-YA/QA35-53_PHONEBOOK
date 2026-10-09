@@ -1,0 +1,5 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","1173","test_login_unregistered","tests","2026-10-06","passed","2026-10-06","","test_login","",""
+"","1170","test_login_wrong_password","tests","2026-10-06","passed","2026-10-06","","test_login","",""
+"","1149","test_login_wrong_email","tests","2026-10-06","passed","2026-10-06","","test_login","",""
+"","1063","test_login_success","tests","2026-10-06","passed","2026-10-06","","test_login","",""

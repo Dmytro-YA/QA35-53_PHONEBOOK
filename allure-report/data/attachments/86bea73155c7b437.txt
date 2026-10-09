@@ -1,0 +1,4 @@
+2026-10-06 19:12:16,908-INFO-conftest-Starting browser session
+2026-10-06 19:12:18,059-INFO-tests.test_login-Starting test_login_wrong_password with user: testdima@gmail.com
+2026-10-06 19:12:18,062-INFO-pages.login_page-Opening login form
+2026-10-06 19:12:19,231-INFO-conftest-Closing browser session

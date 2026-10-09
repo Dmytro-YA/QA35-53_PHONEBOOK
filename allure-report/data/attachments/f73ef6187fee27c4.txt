@@ -1,0 +1,5 @@
+2026-10-06 19:12:06,173-INFO-conftest-Starting browser session
+2026-10-06 19:12:13,481-INFO-tests.test_login-Starting test_login_success
+2026-10-06 19:12:13,485-INFO-tests.test_login-Logging in as testdima@gmail.com
+2026-10-06 19:12:13,490-INFO-pages.login_page-Opening login form
+2026-10-06 19:12:14,545-INFO-conftest-Closing browser session

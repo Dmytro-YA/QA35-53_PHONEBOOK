@@ -1,0 +1,1180 @@
+
+======================================
+FILE: ./conftest.py
+======================================
+
+import pytest
+from selenium import webdriver
+
+from data.user_data import exiting_user
+from pages.login_page import LoginPage
+
+
+
+@pytest.fixture
+def driver():
+    driver = webdriver.Chrome()
+    driver.get('https://telranedu.web.app/')
+    driver.implicitly_wait(5)
+    yield driver
+    driver.quit()
+
+
+@pytest.fixture
+def authenticated_driver(driver):
+    login_page = LoginPage(driver)
+    user = exiting_user()
+    login_page.open_login_form()
+    login_page.fill_email(user.username)
+    login_page.fill_password(user.password)
+    login_page.click_login_btn()
+    return driver
+
+======================================
+FILE: ./tests/test_registration_obj.py
+======================================
+
+import uuid
+
+from models.user import User
+from pages.registration_page import RegistrationPage
+
+
+def test_registration_success(driver):
+    registration_page = RegistrationPage(driver)
+
+    random_suffix = uuid.uuid4().hex[:8]
+
+    user = User(
+        f"dmitri{random_suffix}@gmail.com",
+        "Test12345@"
+    )
+    registration_page.open_registration_form()
+    registration_page.fill_email_and_password(user.username,user.password)
+    registration_page.click_registration_btn()
+
+    assert registration_page.is_logged() is True
+
+
+def test_registration_wrong_email(driver):
+    registration_page = RegistrationPage(driver)
+
+
+
+    user = User(
+        "dmitrigmail.com",
+        "Test12345@"
+    )
+    registration_page.open_registration_form()
+    registration_page.fill_email_and_password(user.username, user.password)
+    registration_page.click_registration_btn()
+
+    alert_text = registration_page.get_alert_text()
+    assert 'Wrong email or password format' in alert_text
+    registration_page.accept_alert()
+
+
+def test_registration_wrong_password(driver):
+    registration_page = RegistrationPage(driver)
+
+    user = User(
+        "dmitri@gmail.com",
+        "Test12345"
+    )
+    registration_page.open_registration_form()
+    registration_page.fill_email_and_password(user.username, user.password)
+    registration_page.click_registration_btn()
+
+    alert_text = registration_page.get_alert_text()
+    assert 'Wrong email or password format' in alert_text
+    registration_page.accept_alert()
+
+======================================
+FILE: ./tests/test_edit_contact.py
+======================================
+
+import time
+
+import pytest
+
+from data.contact_data import create_contact, fake
+from pages.add_contact_page import ContactPage
+from pages.contacts_page import ContactsPage
+
+
+def test_edit_contact_name_update(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    new_name = fake.first_name()
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_NAME_INPUT, new_name)
+    contacts_page.submit_edit()
+
+    assert contacts_page.contact_name_for_phone(contact.phone) == new_name
+
+
+def test_edit_contact_last_name_updated(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    new_last_name = fake.last_name()
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_LAST_NAME_INPUT, new_last_name)
+    contacts_page.submit_edit()
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    assert contacts_page.get_edit_contact(contacts_page.EDIT_LAST_NAME_INPUT) == new_last_name
+    print(contacts_page.get_edit_contact(contacts_page.EDIT_LAST_NAME_INPUT))
+    print(new_last_name)
+
+def test_edit_contact_phone_updated(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    new_phone = fake.unique.numerify("05########")
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_PHONE_INPUT, new_phone)
+    contacts_page.submit_edit()
+
+    assert contacts_page.contact_card_visible(new_phone)
+    assert contacts_page.contact_cards_count(contact.phone) == 0
+
+def test_edit_contact_email_updated(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    new_email = fake.unique.email()
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_EMAIL_INPUT, new_email)
+    contacts_page.submit_edit()
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+
+    assert contacts_page.get_edit_contact(contacts_page.EDIT_EMAIL_INPUT) == new_email
+
+def test_edit_contact_address_updated(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    new_address = fake.city()
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    time.sleep(2)
+    contacts_page.set_edit_field(contacts_page.EDIT_ADDRESS_INPUT, new_address)
+    contacts_page.submit_edit()
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    assert contacts_page.get_edit_contact(contacts_page.EDIT_ADDRESS_INPUT) == new_address
+
+@pytest.mark.skip(reason="Not implemented yet")
+def test_edit_contact_description_updated(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    new_description = fake.sentence(5)
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_DESCRIPTION_INPUT, new_description)
+    contacts_page.submit_edit()
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    assert contacts_page.get_edit_contact(contacts_page.EDIT_DESCRIPTION_INPUT) == new_description
+
+
+def test_edit_contact_empty_name_negative(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    new_name = fake.first_name()
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_NAME_INPUT, "")
+    contacts_page.submit_edit()
+
+    assert contacts_page.contact_name_for_phone(contact.phone) == contact.name
+
+def test_edit_contact_empty_last_name_negative(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    new_last_name = fake.last_name()
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_LAST_NAME_INPUT, "")
+    contacts_page.submit_edit()
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+
+    assert contacts_page.get_edit_contact(contacts_page.EDIT_LAST_NAME_INPUT) == contact.last_name
+
+def test_edit_contact_empty_phone_negative(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_PHONE_INPUT, "")
+    contacts_page.submit_edit()
+    assert contacts_page.contact_cards_count(contact.phone) == 1
+
+def test_edit_contact_empty_email_negative(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_EMAIL_INPUT, "")
+    contacts_page.submit_edit()
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    assert contacts_page.get_edit_contact(contacts_page.EDIT_EMAIL_INPUT) == contact.email
+
+def test_edit_contact_empty_address_negative(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+    contact = create_contact()
+    contact_page.create_contact_steps(contact)
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_ADDRESS_INPUT, "")
+    contacts_page.submit_edit()
+
+    contacts_page.open_contact_details(contact.phone)
+    contacts_page.open_edit_mode()
+    assert contacts_page.get_edit_contact(contacts_page.EDIT_ADDRESS_INPUT) == contact.address
+
+@pytest.mark.skip(reason="Not implemented yet")
+def test_edit_contact_duplicate_phone_negative(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+    existing_contact = create_contact()
+    other_contact = create_contact()
+    contact_page.create_contact_steps(existing_contact)
+    contact_page.create_contact_steps(other_contact)
+
+
+
+    contacts_page.open_contact_details(other_contact.phone)
+    contacts_page.open_edit_mode()
+    contacts_page.set_edit_field(contacts_page.EDIT_PHONE_INPUT, existing_contact.phone)
+    contacts_page.submit_edit()
+    assert contacts_page.contact_cards_count(existing_contact.phone) == 1
+
+
+def test_edit_contact_duplicate_email_negative(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+
+    existing_contact = create_contact()
+    other_contact = create_contact()
+
+    contact_page.create_contact_steps(existing_contact)
+    contact_page.create_contact_steps(other_contact)
+
+    contacts_page.open_contact_details(other_contact.phone)
+    contacts_page.open_edit_mode()
+
+    contacts_page.set_edit_field(contacts_page.EDIT_EMAIL_INPUT, existing_contact.email)
+    contacts_page.submit_edit()
+    contacts_page.open_contact_details(other_contact.phone)
+    contacts_page.open_edit_mode()
+    assert contacts_page.get_edit_contact(contacts_page.EDIT_EMAIL_INPUT) == other_contact.email
+
+
+
+
+
+
+
+======================================
+FILE: ./tests/test_login.py
+======================================
+
+from data.user_data import create_user, exiting_user, invalid_email_user, invalid_password_user
+from pages.login_page import LoginPage
+
+
+
+def test_login_success(driver):
+
+    login_page = LoginPage(driver)
+    user = exiting_user()
+    login_page.open_login_form()
+    login_page.fill_email(user.username)
+    login_page.fill_password(user.password)
+    login_page.click_login_btn()
+
+    assert login_page.is_logged() is True
+
+def test_login_wrong_email(driver):
+    login_page = LoginPage(driver)
+    user = invalid_email_user()
+
+    login_page.open_login_form()
+    login_page.fill_email(user.username)
+    login_page.fill_password(user.password)
+    login_page.click_login_btn()
+
+    assert login_page.get_alert_text() == "Wrong email or password"
+    login_page.accept_alert()
+
+def test_login_wrong_password(driver):
+    login_page = LoginPage(driver)
+    user = invalid_password_user()
+
+    login_page.open_login_form()
+    login_page.fill_email(user.username)
+    login_page.fill_password(user.password)
+    login_page.click_login_btn()
+
+    assert login_page.get_alert_text() == "Wrong email or password"
+    login_page.accept_alert()
+
+def test_login_unregistered(driver):
+
+    login_page = LoginPage(driver)
+    user = create_user(username="dssdsd@gnmail.com", password="QWEwer123!")
+
+    login_page.open_login_form()
+    login_page.fill_email(user.username)
+    login_page.fill_password(user.password)
+    login_page.click_login_btn()
+
+    assert login_page.get_alert_text() == "Wrong email or password"
+    login_page.accept_alert()
+======================================
+FILE: ./tests/__init__.py
+======================================
+
+
+======================================
+FILE: ./tests/test_add_contact.py
+======================================
+
+import random
+import time
+
+import pytest
+
+from data.contact_data import create_contact
+from models.contact import Contact
+from pages import contacts_page
+from pages.add_contact_page import ContactPage
+from faker import Faker
+
+from pages.contacts_page import ContactsPage
+from pages.faker1 import faker
+
+
+def test_add_contact_success_all_fields(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactPage(authenticated_driver)
+    contact = create_contact()
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert contacts_page.contact_card_visible(contact.phone)
+
+def test_add_contact_success_required_fields(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactsPage(authenticated_driver)
+
+    contact = create_contact(description="")
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert contact_page.contact_card_visible(contact.phone)
+
+
+def test_add_contact_with_invalid_phone(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contact = Contact(
+        faker.name(),
+        faker.last_name(),
+        faker.unique.numerify("05##"),
+        faker.unique.email(),
+        faker.address(),
+        faker.sentence(5)
+    )
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert "Phone not valid:" in contact_page.get_alert_text()
+    print(contact_page.get_alert_text())
+    time.sleep(2)
+    contact_page.accept_alert()
+
+def test_add_contact_with_invalid_email(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contact = Contact(
+        faker.name(),
+        faker.last_name(),
+        faker.unique.numerify("05##########"),
+        "w.com",
+        faker.address(),
+        faker.sentence(5)
+    )
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert "Email not valid:" in contact_page.get_alert_text()
+    print(contact_page.get_alert_text())
+    time.sleep(2)
+    contact_page.accept_alert()
+
+def test_add_contact_empty_name(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+
+
+    contact = Contact(
+        "",
+        faker.last_name(),
+        faker.unique.numerify("05########"),
+        faker.unique.email(),
+        faker.address(),
+        faker.sentence(5)
+    )
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    contact_page.open_contacts_link()
+
+
+    assert not contact_page.contact_card_visible(contact.phone)
+
+
+def test_add_contact_empty_last_name(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+
+    contact = Contact(
+        faker.name(),
+        "",
+        faker.unique.numerify("05########"),
+        faker.unique.email(),
+        faker.address(),
+        faker.sentence(5)
+    )
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    contact_page.open_contacts_link()
+
+    assert not contact_page.contact_card_visible(contact.phone)
+
+def test_add_contact_empty_address(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+
+    contact = Contact(
+        faker.name(),
+        faker.last_name(),
+        faker.unique.numerify("05########"),
+        faker.unique.email(),
+        "",
+        faker.sentence(5)
+    )
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    contact_page.open_contacts_link()
+
+    assert not contact_page.contact_card_visible(contact.phone)
+
+
+PHONE_ALERT_TEXT = "Phone not valid: Phone number must contain only digits! And length min 10, max 15!"
+EMAIL_ALERT_TEXT = "Email not valid: must be a well-formed email address"
+
+def test_add_contact_empty_name(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactPage(authenticated_driver)
+    contact = create_contact(name="")
+
+
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert contact_page.is_add_btn_active()
+    contact_page.open_contacts_link()
+
+    assert contacts_page.contact_cards_count(contact.phone) == 0
+
+def test_add_contact_empty_last_name(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactPage(authenticated_driver)
+    contact = create_contact(last_name="")
+
+
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert contact_page.is_add_btn_active()
+    contact_page.open_contacts_link()
+    assert contacts_page.contact_cards_count(contact.phone) == 0
+
+
+# @pytest.mark.skip(reason="Not implemented yet")
+@pytest.mark.xfail(reason="Not implemented yet")
+def test_add_contact_empty_email(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+
+
+    contact = Contact(
+        faker.name(),
+        faker.last_name(),
+        faker.unique.numerify("05########"),
+        "",
+        faker.address(),
+        faker.sentence(5)
+    )
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert contact_page.is_add_btn_active()
+    contact_page.open_contacts_link()
+    assert contact_page.contact_card_visible(contact.phone) == 0
+
+
+
+def test_add_contact_empty_address(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactPage(authenticated_driver)
+    contact = create_contact(address="")
+
+
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert contact_page.is_add_btn_active()
+    contact_page.open_contacts_link()
+    assert contacts_page.contact_cards_count(contact.phone) == 0
+
+def test_add_contact_invalid_phone(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactPage(authenticated_driver)
+    contact = create_contact(phone="fghjfghdf")
+
+
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert contact_page.get_alert_text().strip() == PHONE_ALERT_TEXT
+    contact_page.accept_alert()
+
+    assert contact_page.is_add_btn_active()
+    contact_page.open_contacts_link()
+    assert contacts_page.contact_cards_count(contact.phone) == 0
+
+def test_add_contact_invalid_email(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactPage(authenticated_driver)
+    contact = create_contact(email="invalidemail")
+
+
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(contact)
+    contact_page.submit_contact()
+
+    assert contact_page.get_alert_text().strip() == EMAIL_ALERT_TEXT
+    contact_page.accept_alert()
+
+    assert contact_page.is_add_btn_active()
+    contact_page.open_contacts_link()
+    assert contacts_page.contact_cards_count(contact.phone) == 0
+
+@pytest.mark.skip(reason="Not implemented yet")
+def test_add_contact_duplicate_phone_rejected(authenticated_driver):
+    contact_page = ContactPage(authenticated_driver)
+    contacts_page = ContactPage(authenticated_driver)
+
+    shared_phone = faker.unique.numerify("05########")
+    first_contact = create_contact(phone=shared_phone)
+    second_contact = create_contact(phone=shared_phone)
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(first_contact)
+    contact_page.submit_contact()
+    assert contacts_page.contact_card_visible(shared_phone)
+
+    contact_page.open_add_contact_form()
+    contact_page.fill_contact_form(second_contact)
+    contact_page.submit_contact()
+
+
+    contacts_page.open_contacts_link()
+    assert contacts_page.contact_cards_count(shared_phone) == 1
+
+
+
+
+
+======================================
+FILE: ./tests/test_registration.py
+======================================
+
+import time
+
+from faker import Faker
+
+from pages.registration_page import RegistrationPage
+
+fake = Faker()
+
+VALID_PASSWORD = "Test@12345"
+VALID_EMAIL = fake.email()
+REGISTERED_EMAIL = "testdima@gmail.com"
+INVALID_EMAIL = "testdima@gmail."
+INVALID_PASSWORD = "Test1"
+
+
+def test_registration_success(driver):
+    registration_page = RegistrationPage(driver)
+    registration_page.open_registration_form()
+    registration_page.fill_email_and_password(VALID_EMAIL, VALID_PASSWORD)
+    time.sleep(2)
+    registration_page.click_registration_btn()
+    assert registration_page.is_logged() is True
+
+def test_registration_already_registered(driver):
+    registration_page = RegistrationPage(driver)
+    registration_page.open_registration_form()
+    registration_page.fill_email_and_password(REGISTERED_EMAIL, VALID_PASSWORD)
+    time.sleep(2)
+    registration_page.click_registration_btn()
+    assert registration_page.get_alert_text() == "User already exist"
+    registration_page.accept_alert()
+
+def test_registration_invalid_email(driver):
+    registration_page = RegistrationPage(driver)
+    registration_page.open_registration_form()
+    registration_page.fill_email_and_password(INVALID_EMAIL, VALID_PASSWORD)
+    time.sleep(2)
+    registration_page.click_registration_btn()
+    assert registration_page.get_alert_text() == ('Wrong email or password format\n'
+ '            Email must contains one @ and minimum 2 symbols after last dot\n'
+ '            Password must contain at least one uppercase letter!\n'
+ '            Password must contain at least one lowercase letter!\n'
+ '            Password must contain at least one digit!\n'
+ '            Password must contain at least one special symbol from '
+ '[‘$’,’~’,’-‘,’_’]!')
+    registration_page.accept_alert()
+#
+# def test_registration_invalid_password(driver):
+#     registration_page = RegistrationPage(driver)
+#     registration_page.open_registration_form()
+#     registration_page.fill_email_and_password(VALID_EMAIL, INVALID_PASSWORD)
+#     time.sleep(2)
+#     registration_page.click_registration_btn()
+#     assert registration_page.get_alert_text() == ('Wrong email or password format\n'
+#  '            Email must contains one @ and minimum 2 symbols after last dot\n'
+#  '            Password must contain at least one uppercase letter!\n'
+#  '            Password must contain at least one lowercase letter!\n'
+#  '            Password must contain at least one digit!\n'
+#  '            Password must contain at least one special symbol from '
+#  '[‘$’,’~’,’-‘,’_’]!')
+#     registration_page.accept_alert()
+
+def test_registration_invalid_password(driver):
+    registration_page = RegistrationPage(driver)
+    registration_page.open_registration_form()
+    registration_page.fill_email_and_password(VALID_EMAIL, INVALID_PASSWORD)
+
+    registration_page.click_registration_btn()
+    alert_text = registration_page.get_alert_text()
+    assert 'Wrong email or password format' in alert_text
+    registration_page.accept_alert()
+
+
+
+======================================
+FILE: ./models/user.py
+======================================
+
+class User:
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+
+
+======================================
+FILE: ./models/__init__.py
+======================================
+
+
+======================================
+FILE: ./models/contact.py
+======================================
+
+
+class Contact:
+    def __init__(self, name, last_name, phone, email, address, description):
+        self.name = name
+        self.last_name = last_name
+        self.phone = phone
+        self.email = email
+        self.address = address
+        self.description = description
+======================================
+FILE: ./data/__init__.py
+======================================
+
+
+======================================
+FILE: ./data/contact_data.py
+======================================
+
+
+from faker import Faker
+
+from models.contact import Contact
+
+fake = Faker()
+
+def create_contact(name=None, last_name=None, phone=None, email=None, address=None, description=None):
+    return Contact(
+        name=name if name is not None else fake.name(),
+        last_name=last_name if last_name is not None else fake.last_name(),
+        phone=phone if phone is not None else fake.unique.numerify("05########"),
+        email=email if email is not None else fake.unique.email(),
+        address=address if address is not None else fake.street_address(),
+        description= description if description is not None else fake.sentence(5)
+    )
+# def create_contact(**overrides) -> Contact:
+#     data = {
+#         "name": fake.first_name(),
+#         "last_name": fake.last_name(),
+#         "phone": fake.unique.numerify("05########"),
+#         "email": fake.unique.email(),
+#         "address": fake.address(),
+#         "description": fake.sentence(), }
+#     data.update(overrides)
+#     return Contact(**data)
+======================================
+FILE: ./data/user_data.py
+======================================
+
+
+from faker import Faker
+
+from models.user import User
+
+fake = Faker()
+def create_user(username = None, password = None):
+    return User(username=username if username is not None else fake.unique.email(),
+                password=password if password is not None else fake.password(
+                    length=12, special_chars=True, digits=True, upper_case=True, lower_case=True
+                ))
+
+EXITING_USER_EMAIL = "testdima@gmail.com"
+EXITING_USER_PASSWORD = "Test@123456"
+INVALID_EMAIL = "testdima@gmail"
+INVALID_PASSWORD = "Test1"
+
+def exiting_user():
+    return create_user(EXITING_USER_EMAIL, EXITING_USER_PASSWORD)
+
+def invalid_email_user():
+    return create_user(INVALID_EMAIL, EXITING_USER_PASSWORD)
+
+def invalid_password_user():
+    return create_user(EXITING_USER_EMAIL, INVALID_PASSWORD)
+======================================
+FILE: ./pages/contacts_page.py
+======================================
+
+import time
+
+from selenium.common import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+from pages.base_page import BasePage
+
+
+class ContactsPage(BasePage):
+    CONTACTS_LINK = (By.CSS_SELECTOR, 'a[href="/contacts"]')
+    CONTACT_CARDS = (By.CSS_SELECTOR, 'contact-item_card__2SOIM')
+    EDIT_BTN = (By.XPATH, '//button[text()="Edit"]')
+    EDIT_NAME_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Name"]')
+    EDIT_LAST_NAME_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Last Name"]')
+    EDIT_PHONE_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Phone"]')
+    EDIT_EMAIL_INPUT = (By.CSS_SELECTOR, 'input[placeholder="email"]')
+    EDIT_ADDRESS_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Address"]')
+    EDIT_DESCRIPTION_INPUT = (By.CSS_SELECTOR, 'input[placeholder="desc"]')
+    EDIT_SAVE_BTN = (By.XPATH, '//button[text()="Save"]')
+
+
+
+    def open_contacts_link(self):
+        self.click(self.CONTACTS_LINK)
+        WebDriverWait(self.driver,5).until(EC.url_contains("contacts"))
+
+    def contact_cards_count(self, phone):
+        return len(self.driver.find_elements(By.XPATH,f"//h3[text()='{phone}']/.."))
+
+    def open_contact_details(self, phone):
+        locator = (By.XPATH, f"//div[contains(@class, 'contact-item_card')][.//h3[text()='{phone}']]")
+        self.click(locator)
+
+    def contact_card_visible(self, phone):
+        locator = (By.XPATH, f'//h3[text()="{phone}"]')
+        try:
+            element = WebDriverWait(self.driver,2).until(
+            EC.visibility_of_element_located(locator)
+            )
+            return element.is_displayed()
+        except TimeoutException:
+            return False
+
+    def open_edit_mode(self):
+        self.click(self.EDIT_BTN)
+
+    def set_edit_field(self, locator, value):
+        self.fill(locator, value)
+
+    def submit_edit(self):
+        self.click(self.EDIT_SAVE_BTN)
+        WebDriverWait(self.driver, 5).until(EC.invisibility_of_element_located(self.EDIT_SAVE_BTN))
+
+    def contact_name_for_phone(self, phone):
+        card = self.driver.find_element(By.XPATH, f"//div[contains(@class, 'contact-item_card')][.//h3[text()='{phone}']]")
+        return card.find_element(By.TAG_NAME, "h2").text
+
+    def get_edit_contact(self, locator):
+        return self.find(locator).get_attribute("value")
+
+
+
+
+======================================
+FILE: ./pages/base_page.py
+======================================
+
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+class BasePage:
+    def __init__(self, driver):
+        self.driver = driver
+
+    def find(self, locator):
+        return self.driver.find_element(*locator)
+
+    def click(self, locator):
+        self.find(locator).click()
+
+    def fill(self, locator, value):
+        self.find(locator).clear()
+        self.find(locator).send_keys(value)
+
+    def get_alert_text(self):
+        alert = WebDriverWait(self.driver, 5).until(EC.alert_is_present())
+
+        return alert.text
+
+    def accept_alert(self):
+        self.driver.switch_to.alert.accept()
+
+======================================
+FILE: ./pages/registration_page.py
+======================================
+
+from selenium.webdriver.support import expected_conditions as EC
+
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+
+from pages.base_page import BasePage
+
+
+class RegistrationPage(BasePage):
+
+    LOGIN_NAV_LINK = (By.CSS_SELECTOR, 'a[href="/login"]')
+    EMAIL_INPUT = (By.CSS_SELECTOR, 'input[name="email"]')
+    PASSWORD_INPUT = (By.CSS_SELECTOR, 'input[name="password"]')
+    REGISTRATION_BTN = (By.XPATH, "//button[@name='registration']")
+    SIGN_OUT_BTN = (By.XPATH, "//button[text()='Sign Out']")
+
+    # def __init__(self, driver):
+    #     self.driver = driver
+
+    def open_registration_form(self):
+        # self.driver.find_element(*self.LOGIN_NAV_LINK).click()
+        self.click(self.LOGIN_NAV_LINK)
+    def fill_email_and_password(self, email: str, password: str):
+        # self.driver.find_element(*self.EMAIL_INPUT).clear()
+        # self.driver.find_element(*self.EMAIL_INPUT).send_keys(email)
+        # self.driver.find_element(*self.PASSWORD_INPUT).clear()
+        # self.driver.find_element(*self.PASSWORD_INPUT).send_keys(password)
+        self.fill(self.EMAIL_INPUT, email)
+        self.fill(self.PASSWORD_INPUT, password)
+
+    def click_registration_btn(self):
+        # self.driver.find_element(*self.REGISTRATION_BTN).click()
+        self.click(self.REGISTRATION_BTN)
+
+    def is_logged(self):
+        try:
+            WebDriverWait(self.driver, 5).until(
+                EC.visibility_of_element_located(self.SIGN_OUT_BTN)
+            )
+            return True
+        except TimeoutError:
+            return False
+
+    def get_alert_text(self):
+        alert = WebDriverWait(self.driver, 5).until(EC.alert_is_present())
+
+        return alert.text
+    def accept_alert(self):
+        self.driver.switch_to.alert.accept()
+
+
+======================================
+FILE: ./pages/login_page.py
+======================================
+
+from selenium.webdriver.support import expected_conditions as EC
+
+from selenium.common import NoSuchElementException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+
+from pages.base_page import BasePage
+
+
+class LoginPage(BasePage):
+
+    LOGIN_NAV_LINK = (By.CSS_SELECTOR, 'a[href="/login"]')
+    EMAIL_INPUT = (By.CSS_SELECTOR, 'input[name="email"]')
+    PASSWORD_INPUT = (By.CSS_SELECTOR, 'input[name="password"]')
+    LOGIN_BTN = (By.XPATH, '//button[text()="Login"]')
+    SIGN_OUT_BTN = (By.XPATH, '//*[text()="Sign Out"]')
+
+    # def __init__(self, driver):
+    #     self.driver = driver
+
+    def open_login_form(self):
+        # self.driver.find_element(*self.LOGIN_NAV_LINK).click()
+        self.click(self.LOGIN_NAV_LINK)
+
+    def fill_email(self, email: str):
+        # self.driver.find_element(*self.EMAIL_INPUT).clear()
+        # self.driver.find_element(*self.EMAIL_INPUT).send_keys(email)
+        self.fill(self.EMAIL_INPUT, email)
+
+    def fill_password(self, password: str):
+        # self.driver.find_element(*self.PASSWORD_INPUT).clear()
+        # self.driver.find_element(*self.PASSWORD_INPUT).send_keys(password)
+        self.fill(self.PASSWORD_INPUT, password)
+
+    def click_login_btn(self):
+        self.click(self.LOGIN_BTN)
+
+    # def is_logged(self):
+    #     try:
+    #         self.driver.find_element(*self.SIGN_OUT_BTN).is_displayed()
+    #         return True
+    #     except NoSuchElementException:
+    #
+    #         return False
+
+    def is_logged(self):
+        try:
+            WebDriverWait(self.driver, 5).until(
+                EC.visibility_of_element_located(self.SIGN_OUT_BTN)
+            )
+            return True
+        except TimeoutError:
+            return False
+
+    # def get_alert_text(self):
+    #     alert = WebDriverWait(self.driver, 5).until(EC.alert_is_present())
+    #
+    #     return alert.text
+    #
+    # def accept_alert(self):
+    #     self.driver.switch_to.alert.accept()
+
+
+
+
+
+
+
+======================================
+FILE: ./pages/__init__.py
+======================================
+
+
+======================================
+FILE: ./pages/add_contact_page.py
+======================================
+
+from selenium.common import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
+
+from pages.base_page import BasePage
+
+
+class ContactPage(BasePage):
+    ADD_CONTACT_LINK = (By.CSS_SELECTOR, 'a[href="/add"]')
+    NAME_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Name"]')
+    LAST_NAME_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Last Name"]')
+    PHONE_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Phone"]')
+    EMAIL_INPUT = (By.CSS_SELECTOR, 'input[placeholder="email"]')
+    ADDRESS_INPUT = (By.CSS_SELECTOR, 'input[placeholder="Address"]')
+    DESCRIPTION_INPUT = (By.CSS_SELECTOR, 'input[placeholder="description"]')
+    SAVE_BTN = (By.XPATH, '//button[b[text()="Save"]]')
+    CONTACTS_LINK = (By.CSS_SELECTOR, 'a[href="/contacts"]')
+
+
+    # def __init__(self, driver):
+    #     self.driver = driver
+
+    def open_add_contact_form(self):
+        # self.driver.find_element(*self.ADD_CONTACT_LINK).click()
+        self.click(self.ADD_CONTACT_LINK)
+
+    def fill_name(self, name: str):
+        # self.driver.find_element(*self.NAME_INPUT).clear()
+        # self.driver.find_element(*self.NAME_INPUT).send_keys(name)
+        self.fill(self.NAME_INPUT, name)
+
+    def fill_last_name(self, last_name: str):
+        # self.driver.find_element(*self.LAST_NAME_INPUT).clear()
+        # self.driver.find_element(*self.LAST_NAME_INPUT).send_keys(last_name)
+        self.fill(self.LAST_NAME_INPUT, last_name)
+
+    def fill_phone(self, phone: str):
+        # self.driver.find_element(*self.PHONE_INPUT).clear()
+        # self.driver.find_element(*self.PHONE_INPUT).send_keys(phone)
+        self.fill(self.PHONE_INPUT, phone)
+
+    def fill_email(self, email: str):
+        # self.driver.find_element(*self.EMAIL_INPUT).clear()
+        # self.driver.find_element(*self.EMAIL_INPUT).send_keys(email)
+        self.fill(self.EMAIL_INPUT, email)
+
+    def fill_address(self, address: str):
+        # self.driver.find_element(*self.ADDRESS_INPUT).clear()
+        # self.driver.find_element(*self.ADDRESS_INPUT).send_keys(address)
+        self.fill(self.ADDRESS_INPUT, address)
+
+    def fill_description(self, description: str):
+        # self.driver.find_element(*self.DESCRIPTION_INPUT).clear()
+        # self.driver.find_element(*self.DESCRIPTION_INPUT).send_keys(description)
+        self.fill(self.DESCRIPTION_INPUT, description)
+
+    def fill_contact_form(self, contact):
+        self.fill_name(contact.name)
+        self.fill_last_name(contact.last_name)
+        self.fill_phone(contact.phone)
+        self.fill_email(contact.email)
+        self.fill_address(contact.address)
+        self.fill_description(contact.description)
+
+    def submit_contact(self):
+        # self.driver.find_element(*self.SAVE_BTN).click()
+        self.click(self.SAVE_BTN)
+
+    def contact_card_visible(self, phone):
+        locator = (By.XPATH, f'//h3[text()="{phone}"]')
+        try:
+            element = WebDriverWait(self.driver,2).until(
+            EC.visibility_of_element_located(locator)
+            )
+            return element.is_displayed()
+        except TimeoutException:
+            return False
+
+    def is_add_btn_active(self):
+        add_link = self.find(self.ADD_CONTACT_LINK)
+        return add_link.get_attribute("class") or ""
+
+    def open_contact_details(self,phone):
+        card = self.driver.find_element(By.XPATH, f'//h3[text()="{phone}"]/../..')
+        card.click()
+
+    def open_contacts_link(self):
+        self.click(self.CONTACTS_LINK)
+        WebDriverWait(self.driver,5).until(EC.url_contains("contacts"))
+
+    def contact_cards_count(self, phone):
+        return len(self.driver.find_elements(By.XPATH,f"//h3[text()='{phone}']/.."))
+
+    def create_contact_steps(self, contact):
+        self.open_add_contact_form()
+        self.fill_contact_form(contact)
+        self.submit_contact()
+
+
+======================================
+FILE: ./pages/faker1.py
+======================================
+
+from faker import Faker
+
+faker = Faker()
+print(faker.password())
+print(faker.email())
+print(faker.name())
+print(faker.last_name())
+print(faker.phone_number())
+print(faker.sentence())
+print(faker.unique.email())
+
+print(faker.unique.numerify("05########"))
